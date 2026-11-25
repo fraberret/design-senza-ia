@@ -92,9 +92,9 @@ ottimi studi.
 - La seconda ondata di segnali, la "sola mossa audace" e la verifica del piano vengono dalla skill
   [frontend-design](https://github.com/anthropics/skills) di Anthropic (Apache 2.0).
 - Segnali di testo, mosse per parte della pagina, token di movimento, "momenti", regole su foto, pesi e loghi di terzi e
-  alcuni caratteri sono adattati da [TasteSkill](https://github.com/Leonxlnx/taste-skill) 2.5.1 (MIT).
+  alcuni caratteri sono adattati da [TasteSkill](https://github.com/Leonxlnx/taste-skill) 2.5.1 (MIT, © 2026 Leonxlnx).
 - Disciplina delle icone, indicazioni su GSAP e metadati delle licenze dei font vengono da
-  [UI/UX Pro Max](https://github.com/nextlevelbuilder/ui-ux-pro-max-skill) (MIT).
+  [UI/UX Pro Max](https://github.com/nextlevelbuilder/ui-ux-pro-max-skill) (MIT, © 2024 Next Level Builder). Note di licenza complete in `LICENSE`.
 - Le regole con le soglie vengono da una ricerca su fonti primarie (NN/g, Baymard, W3C, Google, web.dev, norme UE e
   italiane), citate riga per riga nei `references/`.
 

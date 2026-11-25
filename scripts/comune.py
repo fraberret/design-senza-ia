@@ -2,6 +2,7 @@
 
 Usato da analizza_sito.py, cattura_concorrenti.py e controllo_slop.py.
 """
+import atexit
 import json
 import os
 import re
@@ -16,12 +17,11 @@ UA_MOBILE = ("Mozilla/5.0 (iPhone; CPU iPhone OS 18_0 like Mac OS X) AppleWebKit
              "(KHTML, like Gecko) Version/18.0 Mobile/15E148 Safari/604.1")
 
 # banner dei cookie: nascosti con il CSS, mai accettati
-NASCONDI_BANNER = (
-    "[id*=cookie i],[class*=cookie i],[id*=consent i],[class*=consent i],[id*=iubenda i],"
-    "[class*=iubenda i],#CybotCookiebotDialog,[class*=cmplz],[id*=gdpr i],[class*=gdpr i],"
-    ".cky-consent-container,#onetrust-banner-sdk,#usercentrics-root,.cc-window,.cookie-pop"
-    "{display:none!important}"
-)
+_BANNER = ("[id*=cookie i],[class*=cookie i],[id*=consent i],[class*=consent i],[id*=iubenda i],"
+           "[class*=iubenda i],#CybotCookiebotDialog,[class*=cmplz],[id*=gdpr i],[class*=gdpr i],"
+           ".cky-consent-container,#onetrust-banner-sdk,#usercentrics-root,.cc-window,.cookie-pop")
+# mai html, body o main: plugin come Cookie Notice mettono "cookies-not-set" sul body
+NASCONDI_BANNER = ",".join(x + ":not(html):not(body):not(main)" for x in _BANNER.split(",")) + "{display:none!important}"
 
 
 def url_da_argomento(x):
@@ -39,7 +39,19 @@ def nome_sicuro(url):
     return re.sub(r"[^a-zA-Z0-9.-]", "_", h.replace("www.", ""))[:60] or "pagina"
 
 
-_BROWSER_SENZA_HTTP2 = []  # browser aperti per la riprova: si chiudono con il processo
+_BROWSER_SENZA_HTTP2 = []  # al massimo un browser per la riprova senza HTTP/2, riusato e chiuso alla fine
+
+
+def chiudi_riprove():
+    """Chiude il browser della riprova senza HTTP/2, se è stato aperto."""
+    while _BROWSER_SENZA_HTTP2:
+        try:
+            _BROWSER_SENZA_HTTP2.pop().close()
+        except Exception:
+            pass
+
+
+atexit.register(chiudi_riprove)
 
 
 def apri(browser, url, larghezza=1440, altezza=900, mobile=False, attesa=2500, riprova_http2=True,
@@ -70,9 +82,9 @@ def apri(browser, url, larghezza=1440, altezza=900, mobile=False, attesa=2500, r
             ctx.close()
             raise
         ctx.close()
-        b2 = browser.browser_type.launch(args=["--disable-http2"])
-        _BROWSER_SENZA_HTTP2.append(b2)
-        ctx, pg = contesto(b2)
+        if not _BROWSER_SENZA_HTTP2:
+            _BROWSER_SENZA_HTTP2.append(browser.browser_type.launch(args=["--disable-http2"]))
+        ctx, pg = contesto(_BROWSER_SENZA_HTTP2[0])
         pg.goto(url, wait_until="domcontentloaded", timeout=60000)
     try:
         pg.wait_for_load_state("load", timeout=20000)

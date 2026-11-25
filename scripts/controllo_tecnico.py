@@ -42,7 +42,7 @@ REGOLE = {
     "lcp-lazy": "l'immagine più grande della prima schermata non ha loading=lazy (LCP ≤ 2,5 s)",
     "terzi-al-caricamento": "nessuna richiesta a font, video, mappe o analisi di terzi prima del consenso",
     "font-formato": "font in WOFF2",
-    "movimento-ridotto": "con animazioni o transizioni c'è @media (prefers-reduced-motion)",
+    "movimento-ridotto": "con prefers-reduced-motion nessun elemento resta animato (stili calcolati, anche CSS esterni)",
     "senza-js": "con JavaScript spento resta almeno l'80% del testo",
     "piva": "P.IVA (11 cifre) in home",
     "tel": "i numeri di telefono sono link tel:",
@@ -50,8 +50,15 @@ REGOLE = {
 
 JS_CONTRASTO = r"""
 () => {
-  const rgba = s => { const m = s.match(/rgba?\(([^)]+)\)/); if (!m) return [0,0,0,0];
-    const p = m[1].split(/[\s,\/]+/).filter(Boolean).map(parseFloat); return [p[0],p[1],p[2],p.length>3?p[3]:1]; };
+  // colori letti dai pixel di un canvas: funziona con rgb(), oklch(), color(), color-mix()
+  const tela = document.createElement('canvas'); tela.width = tela.height = 1;
+  const g = tela.getContext('2d', { willReadFrequently: true }); const cache = {};
+  const rgba = s => { if (cache[s]) return cache[s];
+    if (!s || s === 'transparent' || /^rgba\(0, 0, 0, 0\)$/.test(s)) return cache[s] = [0,0,0,0];
+    g.clearRect(0, 0, 1, 1); g.fillStyle = '#010203'; g.fillStyle = s;
+    if (g.fillStyle === '#010203' && !/^(#010203|rgb\(1, 2, 3\))$/.test(s)) return cache[s] = null;  // non leggibile
+    g.fillRect(0, 0, 1, 1); const d = g.getImageData(0, 0, 1, 1).data;
+    return cache[s] = [d[0], d[1], d[2], d[3] / 255]; };
   const sopra = (a, b) => { const t = a[3] + b[3]*(1-a[3]); if (!t) return [255,255,255,1];
     return [0,1,2].map(i => (a[i]*a[3] + b[i]*b[3]*(1-a[3]))/t).concat([t]); };
   const lum = c => { const f = v => { v/=255; return v<=0.03928 ? v/12.92 : Math.pow((v+0.055)/1.055, 2.4); };
@@ -61,19 +68,25 @@ JS_CONTRASTO = r"""
     if (r.width <= 2 || r.height <= 2 || r.right <= 0 || r.bottom <= -scrollY || r.left >= document.documentElement.scrollWidth) return false;
     if (/rect\(0(px)?,? 0(px)?,? 0(px)?,? 0(px)?\)/.test(s.clip) || /inset\(50%\)/.test(s.clipPath)) return false;
     return s.visibility !== 'hidden' && s.display !== 'none' && parseFloat(s.opacity) > 0.05; };
-  const sfondo = e => { // risale i genitori: null se c'è un'immagine, un gradiente o un video sotto
+  // tutto ciò che può stare sotto un testo: foto, video, canvas, sfondi con immagine o gradiente (anche ::before/::after)
+  const media = [];
+  for (const m of document.querySelectorAll('img, video, picture, canvas, svg image, iframe')) media.push(m);
+  for (const m of document.body ? document.body.querySelectorAll('*') : []) {
+    const s = getComputedStyle(m);
+    if ((s.backgroundImage && s.backgroundImage !== 'none') ||
+        ['::before', '::after'].some(ps => { const q = getComputedStyle(m, ps); return q.content !== 'none' && q.backgroundImage !== 'none'; }))
+      media.push(m);
+  }
+  const sopraMedia = e => { const r = e.getBoundingClientRect();
+    return media.some(m => { if (m === e || e.contains(m)) return false; const q = m.getBoundingClientRect();
+      return q.width > 2 && q.height > 2 && q.left < r.right && q.right > r.left && q.top < r.bottom && q.bottom > r.top; }); };
+  const sfondo = e => { // null se sotto il testo c'è un'immagine, un video o un gradiente, o un colore non leggibile
+    if (sopraMedia(e)) return null;
     let strati = [];
     for (let n = e; n && n.nodeType === 1; n = n.parentElement) {
       const s = getComputedStyle(n);
-      if (s.backgroundImage && s.backgroundImage !== 'none') return null;
-      if (n !== e && (n.querySelector(':scope > video, :scope > img, :scope > picture, :scope > canvas'))) {
-        const r = e.getBoundingClientRect();
-        for (const m of n.querySelectorAll(':scope > video, :scope > img, :scope > picture, :scope > canvas')) {
-          const q = m.getBoundingClientRect();
-          if (m !== e && !m.contains(e) && q.left < r.right && q.right > r.left && q.top < r.bottom && q.bottom > r.top) return null;
-        }
-      }
-      const c = rgba(s.backgroundColor); if (c[3] > 0) strati.push(c);
+      const c = rgba(s.backgroundColor); if (!c) return null;
+      if (c[3] > 0) strati.push(c);
       if (c[3] >= 1) break;
     }
     let b = [255,255,255,1];
@@ -94,7 +107,8 @@ JS_CONTRASTO = r"""
     const b = sfondo(e);
     out.controllati++;
     if (!b) { out.occhio.push(testo); continue; }
-    const t = sopra(rgba(s.color), b);
+    const col = rgba(s.color); if (!col) { out.occhio.push(testo); continue; }
+    const t = sopra(col, b);
     const r = rapporto(t, b);
     if (r < minimo) out.falliti.push({ testo, rapporto: Math.round(r*100)/100, minimo, colore: s.color, px });
   }
@@ -121,12 +135,6 @@ JS_PAGINA = r"""
     .map(i => { const r = i.getBoundingClientRect(); return { src: (i.currentSrc || i.src).split('/').pop().slice(0, 60),
       area: r.width * r.height, lazy: i.getAttribute('loading') === 'lazy' }; })
     .sort((a, b) => b.area - a.area);
-  let css = '';
-  for (const sh of document.styleSheets) { try { for (const r of sh.cssRules) css += r.cssText + '\n'; } catch (e) {} }
-  document.querySelectorAll('[style]').forEach(e => css += e.getAttribute('style') + '\n');
-  const animazioni = /@keyframes|animation(-name)?\s*:\s*(?!none)[a-z]/i.test(css) ||
-    /transition(-property)?\s*:\s*(?!none|all 0s)[^;]*\d*\.?\d+m?s/i.test(css);
-  const ridotto = /prefers-reduced-motion/i.test(css);
   const corpo = (document.body && document.body.innerText) || '';
   const piva = /P\.?\s?IVA[^\d]{0,30}\d{11}|Partita IVA[^\d]{0,30}\d{11}/i.test(corpo);
   const tel = [...new Set((corpo.match(/(?:\+39[\s.]?)?(?:0\d{1,3}|3\d{2})(?:[\s./-]?\d{2,4}){2,4}/g) || [])
@@ -135,8 +143,8 @@ JS_PAGINA = r"""
   return { title: document.title || '', description: meta('name', 'description'), lang: document.documentElement.lang || '',
     canonical: !!document.querySelector('link[rel="canonical"]'),
     og: ['og:title', 'og:description', 'og:image'].filter(n => !meta('property', n)),
-    h1: [...document.querySelectorAll('h1')].map(h => h.innerText.trim().slice(0, 60)),
-    ld, alt, dim, prima: prima.slice(0, 3), animazioni, ridotto, piva, tel: tel.slice(0, 5), telLink,
+    h1: [...document.querySelectorAll('h1')].filter(vis).map(h => h.innerText.trim().slice(0, 60)),
+    ld, alt, dim, prima: prima.slice(0, 3), piva, tel: tel.slice(0, 5), telLink,
     testo: corpo.replace(/\s+/g, ' ').trim().length };
 }
 """
@@ -182,6 +190,21 @@ JS_TELEFONO = r"""
 
 SBORDA = "() => document.documentElement.scrollWidth - document.documentElement.clientWidth"
 
+# elementi che si muovono secondo gli stili calcolati (legge anche i CSS esterni, che cssRules non sempre lascia leggere)
+JS_MOVIMENTO = r"""
+() => { const sec = v => Math.max(...v.split(',').map(x => x.trim().endsWith('ms') ? parseFloat(x) / 1000 : parseFloat(x) || 0));
+  const out = [];
+  for (const e of document.querySelectorAll('*')) { const s = getComputedStyle(e);
+    const anim = s.animationName !== 'none' && sec(s.animationDuration) > 0.05;
+    // le transizioni di solo colore o opacità restano ammesse con il movimento ridotto
+    const COLORE = /^(color|background-color|border(-(top|right|bottom|left))?-color|outline-color|text-decoration-color|fill|stroke|opacity|box-shadow|background|filter|backdrop-filter)$/;
+    const props = s.transitionProperty.split(',').map(x => x.trim());
+    const trans = sec(s.transitionDuration) > 0.05 && s.transitionProperty !== 'none' && !props.every(x => COLORE.test(x));
+    if (anim || trans) out.push(e.tagName.toLowerCase() + (e.className && typeof e.className === 'string' ? '.' + e.className.split(' ')[0] : '') + (anim ? ' (animazione)' : ' (transizione)'));
+  }
+  return out; }
+"""
+
 
 def dominio_base(h):
     h = (h or "").lower()
@@ -206,6 +229,8 @@ def valuta(url, js_on, js_off, tel_dati, sbordi, richieste):
     elif co["occhio"]:
         add("contrasto", "a occhio", f'{len(co["occhio"])} testi sopra immagini, video o gradienti: '
             + "; ".join(f'"{t[:40]}"' for t in co["occhio"][:4]))
+    elif not co["controllati"]:
+        add("contrasto", "avviso", "nessun testo controllato: guardare le schermate")
     else:
         add("contrasto", "ok", f'{co["controllati"]} testi controllati')
 
@@ -275,10 +300,12 @@ def valuta(url, js_on, js_off, tel_dati, sbordi, richieste):
                    and not re.search(r"\.woff2(\?|$)", r["url"]) and not r["url"].startswith("data:")})
     add("font-formato", "avviso" if font else "ok", "non WOFF2: " + ", ".join(font[:5]) if font else "solo WOFF2 o nessun font scaricato")
 
-    if pg["animazioni"] and not pg["ridotto"]:
-        add("movimento-ridotto", "errore", "animazioni o transizioni senza @media (prefers-reduced-motion)")
+    mov, mov_ridotto = js_on["movimento"], js_on["movimento_ridotto"]
+    if mov_ridotto:
+        add("movimento-ridotto", "errore", f"{len(mov_ridotto)} elementi si muovono ancora con prefers-reduced-motion: "
+            + ", ".join(mov_ridotto[:4]))
     else:
-        add("movimento-ridotto", "ok", "rispettato" if pg["animazioni"] else "nessuna animazione")
+        add("movimento-ridotto", "ok", f"rispettato ({len(mov)} elementi animati si fermano)" if mov else "nessuna animazione")
 
     con, senza = pg["testo"], js_off.get("testo", 0)
     quota = (senza / con) if con else 1
@@ -312,11 +339,33 @@ def main():
     o = ap.parse_args()
     os.makedirs(o.out, exist_ok=True)
     url = C.url_da_argomento(o.pagina)
+    try:
+        dati = misura(url)
+    except Exception as e:  # rete, DNS, timeout: il rapporto dice l'errore, l'elenco non si ferma
+        msg = (str(e).strip().splitlines() or [type(e).__name__])[0]
+        C.scrivi_json(os.path.join(o.out, "tecnico.json"), {"pagina": url, "errore": msg, "errori": 0, "avvisi": 0, "controlli": []})
+        open(os.path.join(o.out, "tecnico.md"), "w").write(f"# Controllo tecnico\n\nPagina: {url}\n\n**Non controllata:** {msg}\n")
+        print(f"errore: {msg}")
+        return 0
+    finally:
+        C.chiudi_riprove()
+    ctr = valuta(url, *dati)
+    e, a = scrivi(o.out, url, ctr)
+    print(f"{e} errori · {a} avvisi")
+    print(os.path.join(o.out, "tecnico.md"))
+    return 0
+
+
+def misura(url):
     richieste = []
     with sync_playwright() as p:
         b = p.chromium.launch()
         ctx, pg, _ = C.apri(b, url, richieste=richieste, attesa=1500)
         pagina = pg.evaluate(JS_PAGINA)  # prima dello scorrimento: la prima schermata vera
+        movimento = pg.evaluate(JS_MOVIMENTO)
+        pg.emulate_media(reduced_motion="reduce")
+        movimento_ridotto = pg.evaluate(JS_MOVIMENTO)
+        pg.emulate_media(reduced_motion="no-preference")
         C.scorri_tutta(pg)
         contrasto = pg.evaluate(JS_CONTRASTO)
         sbordi = {"1440": pg.evaluate(SBORDA)}
@@ -333,11 +382,8 @@ def main():
         senza = {"testo": len(re.sub(r"\s+", " ", pn.inner_text("body")).strip()) if pn.query_selector("body") else 0}
         ctx.close()
         b.close()
-    ctr = valuta(url, {"contrasto": contrasto, "pagina": pagina}, senza, tel, sbordi, richieste)
-    e, a = scrivi(o.out, url, ctr)
-    print(f"{e} errori · {a} avvisi")
-    print(os.path.join(o.out, "tecnico.md"))
-    return 0
+    return ({"contrasto": contrasto, "pagina": pagina, "movimento": movimento, "movimento_ridotto": movimento_ridotto},
+            senza, tel, sbordi, richieste)
 
 
 if __name__ == "__main__":
