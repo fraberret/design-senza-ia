@@ -3,7 +3,7 @@
 Uso: scripts/py.sh controllo_slop.py <url o file.html> --out <cartella> [--soglia 80]
 
 Apre la pagina in Chromium (1440 e 390), la scorre e conta i segnali del catalogo
-(references/catalogo-segnali.md). Ogni segnale ha un peso: il punteggio parte da 100
+(references/segnali-ia.md). Ogni segnale ha un peso: il punteggio parte da 100
 e scende. Scrive controllo.md (da leggere), controllo.json e le schermate.
 Il punteggio non è un giudizio estetico: misura quante scelte "di default" restano.
 Un segnale scelto di proposito si tiene e si dichiara nella guida di stile (--accetta id1,id2).
