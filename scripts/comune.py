@@ -39,16 +39,35 @@ def nome_sicuro(url):
     return re.sub(r"[^a-zA-Z0-9.-]", "_", h.replace("www.", ""))[:60] or "pagina"
 
 
-def apri(browser, url, larghezza=1440, altezza=900, mobile=False, attesa=2500):
-    ctx = browser.new_context(
-        user_agent=UA_MOBILE if mobile else UA,
-        viewport={"width": larghezza, "height": altezza},
-        is_mobile=mobile, has_touch=mobile, device_scale_factor=1, locale="it-IT",
-    )
-    pg = ctx.new_page()
+_BROWSER_SENZA_HTTP2 = []  # browser aperti per la riprova: si chiudono con il processo
+
+
+def apri(browser, url, larghezza=1440, altezza=900, mobile=False, attesa=2500, riprova_http2=True):
+    """Apre la pagina in un contesto nuovo. Se il sito rifiuta HTTP/2 del browser automatico
+    (ERR_HTTP2_PROTOCOL_ERROR), riprova con un browser lanciato con --disable-http2."""
+    def contesto(b):
+        c = b.new_context(
+            user_agent=UA_MOBILE if mobile else UA,
+            viewport={"width": larghezza, "height": altezza},
+            is_mobile=mobile, has_touch=mobile, device_scale_factor=1, locale="it-IT",
+        )
+        p = c.new_page()
+        p.on("pageerror", lambda e: errori.append(str(e)[:200]))
+        return c, p
+
     errori = []
-    pg.on("pageerror", lambda e: errori.append(str(e)[:200]))
-    pg.goto(url, wait_until="domcontentloaded", timeout=60000)
+    ctx, pg = contesto(browser)
+    try:
+        pg.goto(url, wait_until="domcontentloaded", timeout=60000)
+    except Exception as e:
+        if not (riprova_http2 and "ERR_HTTP2_PROTOCOL_ERROR" in str(e)):
+            ctx.close()
+            raise
+        ctx.close()
+        b2 = browser.browser_type.launch(args=["--disable-http2"])
+        _BROWSER_SENZA_HTTP2.append(b2)
+        ctx, pg = contesto(b2)
+        pg.goto(url, wait_until="domcontentloaded", timeout=60000)
     try:
         pg.wait_for_load_state("load", timeout=20000)
     except Exception:
