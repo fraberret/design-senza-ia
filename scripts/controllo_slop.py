@@ -112,7 +112,11 @@ JS = r"""
   document.querySelectorAll('h1,h2,h3').forEach(h => {
     if (!vis(h)) return; let p = h.previousElementSibling;
     if (!p) { const par = h.parentElement; p = par && par.previousElementSibling; }
-    if (!p || !vis(p)) return; const s = getComputedStyle(p); const t = testo(p);
+    if (!p || !vis(p)) return;
+    // un'etichetta sta sopra il titolo: se sta accanto (un bollino, un'icona a sinistra) non è un eyebrow
+    const rp = p.getBoundingClientRect(), rh = h.getBoundingClientRect();
+    if (rp.bottom > rh.top + 4) return;
+    const s = getComputedStyle(p); const t = testo(p);
     const maiusc = s.textTransform === 'uppercase' || (t && t === t.toUpperCase() && /[A-ZÀ-Ü]/.test(t));
     const spaz = parseFloat(s.letterSpacing) > 0.5;
     if (t && t.length < 60 && parseFloat(s.fontSize) <= 17 && (maiusc || spaz)) add('etichette-sopra-titoli', p);
@@ -136,7 +140,10 @@ JS = r"""
     const ugW = ws.every(w => Math.abs(w - ws[0]) <= ws[0] * 0.04 && w > 150 && w < window.innerWidth * 0.5);
     const box = figli.every(f => { const s = getComputedStyle(f); return pieno(s.backgroundColor) || s.borderTopWidth !== '0px' || s.boxShadow !== 'none'; });
     const ugF = figli.every(f => firma(f) === firma(figli[0]));
-    if (ugW && box && ugF && !gruppi.has(p)) { gruppi.add(p); add('griglia-schede-uguali', p, figli.length + ' schede da ' + ws[0] + 'px'); }
+    // una griglia ha elementi affiancati: un elenco verticale (uno sotto l'altro) non conta
+    const tops = figli.map(f => Math.round(f.getBoundingClientRect().top));
+    const affiancati = tops.some((t, i) => tops.some((u, j) => i !== j && Math.abs(t - u) <= 4));
+    if (ugW && box && ugF && affiancati && !gruppi.has(p)) { gruppi.add(p); add('griglia-schede-uguali', p, figli.length + ' schede da ' + ws[0] + 'px'); }
   });
   let icone = 0; const visti = new Set();
   tuttiVis.forEach(e => { const r = e.getBoundingClientRect(); const s = getComputedStyle(e);
