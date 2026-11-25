@@ -1,6 +1,8 @@
 # Direzione e costruzione
 
-Come si passa dall'analisi a un design che sembra fatto da qualcuno che conosce il cliente.
+Come si passa dall'analisi a un design che sembra fatto da qualcuno che conosce il cliente. Il brief, il tipo di sito e il
+livello di esperienza sono in `tipi-di-sito-e-sezioni.md`; colore, layout e caratteri in `sistema-visivo.md`; testi e
+conversione in `conversione-e-testi.md`; movimento in `movimento-e-telefono.md`.
 
 ## 1. L'inventario del materiale vero (prima di qualsiasi stile)
 
@@ -55,8 +57,11 @@ moda:
 - **Firma.** **Un solo** dettaglio che solo questo cliente avrebbe, usato sempre uguale e solo dove serve (i bollini del sito
   vecchio ridisegnati, una sottolineatura fatta a mano, l'orario scritto come sul cartello del negozio). Uno, non cinque.
 
-Poi, per ogni direzione: font (con il motivo), colori (dal marchio), come è fatta l'apertura, come sono composte le sezioni,
-cosa la rende diversa dai concorrenti. Scegli e scrivi perché.
+Poi, per ogni direzione, il piccolo sistema di `sistema-visivo.md` (4-6 colori con nome e ruolo, 1-2 caratteri con il
+motivo, scala, raggi, movimento per il livello, **una sola mossa audace**), come è fatta l'apertura (il momento visivo forte),
+come sono composte le sezioni, quali riferimenti di `ispirazione.md` usa e cosa prende da ciascuno, cosa la rende diversa dai
+concorrenti. Poi la verifica: "con un altro cliente dello stesso settore arriverei allo stesso piano?". Se sì, si cambia.
+Scegli e scrivi perché.
 
 *Le cinque righe, i livelli di intervento, la prova dello scambio di nome e le regole di finitura sono adattati da unslop
 di Damir Sokolovsky (github.com/heydamir/unslop, CC BY 4.0).*
@@ -83,14 +88,19 @@ Ogni regola ha il suo perché: è quello che decide nei casi non previsti.
 - **Una composizione diversa per sezione.** Mai due sezioni vicine con la stessa impaginazione. Varia anche la densità.
 - **Un segnale scelto, non arrivato.** Un'etichetta sopra un titolo, una griglia di schede, un'icona colorata si possono usare
   se c'è un motivo (scrivilo nella guida di stile); il controllo li accetta con `--accetta`.
-- **Colore pieno del marchio, non gradienti.** Un colore dominante, un accento; niente aloni, vetri, ombre colorate.
+- **Colore pieno del marchio, non gradienti.** Pochi colori usati in grande; niente aloni, vetri, ombre colorate
+  (`sistema-visivo.md`).
 - **Tipografia con carattere.** Un font da display legato al marchio, un font da testo leggibile; salti di dimensione netti;
-  testi mai sotto 15 px.
+  testo corrente mai sotto 16 px, note mai sotto 13 px (`sistema-visivo.md`).
 - **Icone disegnate per il cliente**, coerenti tra loro, nel colore del testo; meglio poche e utili. Un elemento del sito
   vecchio a cui il cliente tiene (i bollini, la mascotte) si ridisegna, non si trasforma nel cliché "icona in cerchio".
 - **Foto vere sopra tutto.** Senza foto, il materiale del cliente (video, schermate, documenti, firma) e la tipografia.
-- **Movimento quasi zero.** Contenuto visibile subito; hover discreti solo su ciò che si clicca; al massimo un momento curato.
-- **Testi del cliente.** Frasi che un concorrente non potrebbe firmare; pulsanti con verbo e oggetto; niente numeri inventati.
+- **Movimento secondo il livello** scelto nel brief (`movimento-e-telefono.md`): contenuto visibile subito; hover discreti
+  solo su ciò che si clicca; un solo momento curato, in una sezione sua.
+- **Testi del cliente.** Frasi che un concorrente non potrebbe firmare; pulsanti con verbo e oggetto; niente numeri inventati
+  (`conversione-e-testi.md`).
+- **Telefono progettato a parte**, non rimpicciolito: ordine dei contenuti, CTA nella zona del pollice, barra fissa in basso
+  (`movimento-e-telefono.md`).
 - **Imperfezioni volute.** Un sito umano ha parti asimmetriche, una sezione più fitta, un dettaglio specifico (un orario
   particolare, una nota del titolare). Non tutto allineato al millimetro con lo stesso respiro.
 - **Finitura precisa.** Le imperfezioni volute stanno nella composizione, non nei dettagli:
@@ -104,7 +114,7 @@ Ogni regola ha il suo perché: è quello che decide nei casi non previsti.
   - niente punti esclamativi né punti finali su titoli, pulsanti ed etichette;
   - transizioni solo su colore, fondo, bordo, opacità e trasformazioni, con una sola curva e durate brevi (120-200 ms per il
     passaggio del mouse); mai animare larghezza, altezza o margini.
-- **Immagini generate**, solo quando per un momento non ci sono foto vere: segui `immagini-generate.md`. Non sostituiscono
+- **Immagini generate**, solo quando per un momento non ci sono foto vere: segui `immagini-icone-logo.md`. Non sostituiscono
   le foto del cliente, che restano da chiedere.
 
 ## 5. Dopo la costruzione
@@ -116,6 +126,7 @@ Ogni regola ha il suo perché: è quello che decide nei casi non previsti.
 3. **Prova dello scambio di nome.** Metti il nome di un concorrente al posto di quello del cliente: la pagina regge lo
    stesso? Se sì, la direzione è debole. Rinforzala nei testi (fatti e parole del cliente), nel momento principale e nella
    firma, non aggiungendo decorazioni.
-4. Controlli tecnici: nessuno sbordamento, un solo H1, contrasti calcolati (testi ≥ 4,5:1, grandi ≥ 3:1), testi ≥ 15 px.
+4. Controllo estetico (gli otto punti di `SKILL.md`) e controllo tecnico con `controllo_tecnico.py` (contrasti, bersagli,
+   sbordamenti, SEO di base, terzi prima del consenso, movimento ridotto): 0 errori; avvisi letti uno per uno.
 5. Confronta con i concorrenti (stesso metro): il nuovo sito deve avere un punteggio IA più alto di tutti e un aspetto
    riconoscibile.

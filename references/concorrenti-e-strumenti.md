@@ -2,7 +2,8 @@
 
 ## Trovare i concorrenti
 
-Obiettivo: 4-8 siti che un potenziale cliente vedrebbe al posto di questo. Due gruppi:
+Obiettivo: 4-8 siti che un potenziale cliente vedrebbe al posto di questo. I riferimenti di gusto (gallerie, studi
+creativi, l'archivio del gusto) sono un'altra cosa: `ispirazione.md`. Due gruppi:
 - **concorrenti diretti**: stessa attività, stessa zona (per le attività locali) o stesso mercato;
 - **riferimenti del settore**: i migliori del mestiere a livello nazionale, per capire il livello e la media.
 
@@ -36,8 +37,10 @@ Cosa ricavarne (scrivilo nell'analisi):
 - **PageSpeed/Lighthouse** (per esempio con una skill SEO e una chiave Google, se presenti): prestazioni e accessibilità del
   sito vecchio, argomento utile nella proposta al cliente.
 - **Uno strumento per generare immagini** (un'app web, un server MCP), se serve un momento senza foto vere: vedi
-  `immagini-generate.md`.
-- **Skill di supporto**, se installate: `ui-ux-pro-max` (ricerca di tavolozze, abbinamenti di font e regole UX per settore,
-  da usare come spunto e non come stile), `design-motion-principles` (movimento), `emil-design-eng` (finitura).
-  `design-taste-frontend` (TasteSkill) produce pagine rigide e vuote per i servizi: non usarla per costruire, al massimo
-  per le sue regole sui testi. `unslop` (heydamir) è pensata per app e dashboard: le sue idee utili sono già qui dentro.
+  `immagini-icone-logo.md`.
+- **Skill di supporto**, se installate: `design-motion-principles` (movimento), `emil-design-eng` (finitura), una skill
+  di copywriting per i testi lunghi. Le regole utili di TasteSkill, UI/UX Pro Max e unslop sono già dentro questa skill
+  (citate nei file `references/`).
+- **`scripts/cattura_scorrimento.py`**: fotogrammi dello scorrimento dei siti con movimento (`ispirazione.md`).
+- **`scripts/controllo_tecnico.py`**: contrasti, bersagli, SEO di base, terzi prima del consenso; utile anche sul sito
+  vecchio del cliente, come argomento nella proposta.

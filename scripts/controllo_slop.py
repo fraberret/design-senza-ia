@@ -3,7 +3,7 @@
 Uso: scripts/py.sh controllo_slop.py <url o file.html> --out <cartella> [--soglia 80]
 
 Apre la pagina in Chromium (1440 e 390), la scorre e conta i segnali del catalogo
-(references/catalogo-segnali.md). Ogni segnale ha un peso: il punteggio parte da 100
+(references/segnali-ia.md). Ogni segnale ha un peso: il punteggio parte da 100
 e scende. Scrive controllo.md (da leggere), controllo.json e le schermate.
 Il punteggio non è un giudizio estetico: misura quante scelte "di default" restano.
 Un segnale scelto di proposito si tiene e si dichiara nella guida di stile (--accetta id1,id2).
@@ -81,10 +81,31 @@ SEGNALI = {
         "Frasi affermative semplici: l'entusiasmo lo danno i fatti, non la punteggiatura."),
     "punto-su-etichette": (2, "bassa", "Punto finale su molti titoli brevi e pulsanti (\"Fatto bene.\", \"Semplice. Veloce.\")",
         "Niente punto su titoli, pulsanti ed etichette; il punto resta nei paragrafi. Se è uno stile scelto (editoriale), accettalo."),
+    # seconda ondata 2026 (skill frontend-design di Anthropic, Apache 2.0; ricerca "Sito web eccellente dalla A alla Z")
+    "crema-terracotta": (6, "alta", "Fondo crema con accento terracotta (il \"buon gusto\" della seconda ondata)",
+        "Colori misurati dal materiale vero del cliente. Se crema e terracotta sono davvero del marchio, accettalo e scrivilo."),
+    "freccia-su-link": (3, "bassa", "Freccia \"→\" aggiunta al testo di molti link e pulsanti",
+        "Il testo del link basta; una freccia solo dove indica davvero un movimento, con un solo stile in pagina."),
+    "puntini-mediani": (2, "bassa", "Meta uniti da puntini mediani (\"Residenziale · 2024 · Como\") in molti punti",
+        "Frasi o etichette normali; il puntino solo dove separa davvero due dati in una riga."),
+    "etichette-mono": (4, "media", "Piccole etichette in monospace sparse in pagina",
+        "Monospace solo per dati, codici e prezzi, se serve; le etichette nel carattere del testo."),
 }
 # Spaziature senza scala e lettere strette sui testi piccoli NON entrano nel punteggio: provati il 25/11/2026,
 # scattano anche su siti fatti da studi (Linear, Stripe) e su siti vecchi fatti a mano. Sono difetti di finitura,
 # non segni da IA: compaiono come informazione nella riga "Finitura" di controllo.md.
+
+# gruppi della tabella delle co-occorrenze (references/segnali-ia.md §11): tre segnali nello stesso gruppo,
+# o quattro gruppi toccati, fanno un aspetto da IA. Informativo: non cambia il punteggio.
+GRUPPI = {
+    "Tipografia": {"font-default", "parola-colorata-h1", "etichette-mono", "etichette-sopra-titoli", "maiuscolo-spaziato", "titoli-pesanti"},
+    "Colore": {"gradiente-fondo", "testo-gradiente", "aloni-decorativi", "vetro", "crema-terracotta", "ombre-colorate"},
+    "Layout": {"pillola-hero", "griglia-schede-uguali", "icona-in-cerchio", "raggio-uniforme", "bordo-e-ombra", "numeri-decorativi",
+               "spazi-uniformi", "struttura-ripetuta", "tutto-centrato", "elenco-spunte", "piede-quattro-colonne"},
+    "Dettagli": {"freccia-su-link", "trattini-lunghi", "puntini-mediani", "esclamativi", "punto-su-etichette"},
+    "Movimento": {"comparsa-scorrimento", "solleva-hover", "statistiche-contatore"},
+    "Contenuto": {"frasi-generiche", "chat-finta", "zero-foto"},
+}
 
 BANALI = ["scopri di più", "scopri", "inizia ora", "inizia subito", "get started", "learn more", "start now",
           "soluzioni innovative", "a 360 gradi", "all'avanguardia", "su misura per te", "il partner ideale",
@@ -249,6 +270,30 @@ JS = r"""
   const conPunto = [...document.querySelectorAll('h1,h2,h3,button,a[class*=btn],a[class*=button],.button')].filter(vis)
     .filter(e => { const t = testo(e); return t.length > 2 && t.length < 70 && /[^.]\.$/.test(t); });
   if (conPunto.length >= 3) conPunto.slice(0, 5).forEach(e => add('punto-su-etichette', e));
+  // seconda ondata: crema + terracotta, frecce sui link, puntini mediani, etichette in monospace
+  // colori dai pixel di un canvas: legge anche oklch(), color(), color-mix()
+  const tela = document.createElement('canvas'); tela.width = tela.height = 1;
+  const g2 = tela.getContext('2d', { willReadFrequently: true });
+  const rgb = c => { if (!c || c === 'transparent') return null; g2.clearRect(0, 0, 1, 1); g2.fillStyle = c; g2.fillRect(0, 0, 1, 1);
+    const d = g2.getImageData(0, 0, 1, 1).data; return d[3] > 128 ? [d[0], d[1], d[2]] : null; };
+  const hsl = ([r, g, b]) => { r /= 255; g /= 255; b /= 255; const M = Math.max(r, g, b), m = Math.min(r, g, b), l = (M + m) / 2;
+    if (M === m) return [0, 0, l]; const d = M - m; const s = l > 0.5 ? d / (2 - M - m) : d / (M + m);
+    let h = M === r ? (g - b) / d + (g < b ? 6 : 0) : M === g ? (b - r) / d + 2 : (r - g) / d + 4; return [h * 60, s, l]; };
+  const fondi = [document.documentElement, document.body, document.querySelector('main')].filter(Boolean).map(e => rgb(bg(e))).filter(Boolean);
+  const crema = fondi.find(c => { const [h, s, l] = hsl(c); return l >= 0.88 && l < 0.985 && s >= 0.15 && h >= 20 && h <= 55 && c[0] > c[2] + 6; });
+  if (crema) { const accenti = new Set(); document.querySelectorAll('a,button,h1,h2,h3,h1 *,h2 *,.btn,[class*=button]').forEach(e => { if (!vis(e)) return;
+      const st = getComputedStyle(e); [st.color, st.backgroundColor].forEach(c => { const v = rgb(c); if (!v) return; const [h, s, l] = hsl(v);
+        if (h >= 5 && h <= 30 && s >= 0.35 && l >= 0.38 && l <= 0.68) accenti.add('rgb(' + v.join(',') + ')'); }); });
+    if (accenti.size) add('crema-terracotta', null, 'fondo rgb(' + crema.join(',') + ') con accento ' + [...accenti][0]); }
+  const frecce = [...document.querySelectorAll('a,button')].filter(vis).filter(e => /(→|->|↗|⟶)\s*$/.test(testo(e)));
+  if (frecce.length >= 3) frecce.slice(0, 5).forEach(e => add('freccia-su-link', e));
+  const puntini = tuttiVis.filter(e => e.children.length === 0 && testo(e).length < 90 && / · /.test(testo(e)) && !e.closest('footer'));
+  if (puntini.length >= 3) puntini.slice(0, 5).forEach(e => add('puntini-mediani', e));
+  const MONO = /mono|courier|consolas|menlo|monaco|code|ibm plex mono|jetbrains|fira code|space mono/i;
+  const mono = tuttiVis.filter(e => { if (e.children.length || e.closest('pre,code,kbd,samp')) return false; const t = testo(e); const st = getComputedStyle(e);
+    return t.length >= 2 && t.length < 40 && parseFloat(st.fontSize) < 14 && MONO.test(st.fontFamily.split(',')[0]); });
+  if (mono.length >= 3) mono.slice(0, 5).forEach(e => add('etichette-mono', e));
+
   const finitura = { spazi_diversi: valori.length, spazi_strani: strani.slice(0, 10), lettere_strette_piccoli: strette };
   return { T, n_sezioni: sezioni.length, font, foto: foto.length, finitura };
 }
@@ -325,9 +370,15 @@ def main():
     punteggio = max(0, punteggio)
     trovati.sort(key=lambda x: -x["punti"])
 
+    non_accettati = {t["id"] for t in trovati if not t["accettato"]}
+    gruppi = {g: len(ids & non_accettati) for g, ids in GRUPPI.items()}
+    toccati = [g for g, n in gruppi.items() if n]
+    aspetto_ia = any(n >= 3 for n in gruppi.values()) or len(toccati) >= 4
     esito = "SUPERATO" if punteggio >= a.soglia else "DA RIVEDERE"
     righe = [f"# Controllo segnali IA: {a.pagina}", "",
              f"**Punteggio: {punteggio}/100 · {esito}** (soglia {a.soglia}). 100 = nessun segnale di default rilevato.", "",
+             "Co-occorrenze per gruppo: " + (", ".join(f"{g} {n}" for g, n in gruppi.items() if n) or "nessuna")
+             + (" · **insieme fanno un aspetto da IA** (3+ nello stesso gruppo o 4+ gruppi)" if aspetto_ia else " · nessun aspetto d'insieme"), "",
              f"Sezioni: {r['n_sezioni']} · foto vere ≥ 400 px: {r['foto']} · font: {', '.join(list(r['font'])[:5])}",
              f"Tecnico: sborda di {tecnici['sborda']}px su computer e {sborda_m}px su telefono · H1: {tecnici['h1']} · testi sotto 15 px: {tecnici['piccoli']} · errori JS: {len(errori) + len(err_m)}",
              f"Finitura (non nel punteggio): {r['finitura']['spazi_diversi']} valori di spaziatura diversi"
@@ -349,6 +400,7 @@ def main():
     with open(os.path.join(out, "controllo.md"), "w") as f:
         f.write("\n".join(righe))
     C.scrivi_json(os.path.join(out, "controllo.json"), {"pagina": a.pagina, "punteggio": punteggio, "esito": esito,
+                                                         "gruppi": gruppi, "aspetto_ia": aspetto_ia,
                                                          "segnali": trovati, "tecnico": tecnici, "sborda_telefono": sborda_m,
                                                          "finitura": r["finitura"]})
     print(f"{punteggio}/100 {esito} · {len(trovati)} tipi di segnale · {out}/controllo.md")
