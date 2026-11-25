@@ -42,16 +42,22 @@ def nome_sicuro(url):
 _BROWSER_SENZA_HTTP2 = []  # browser aperti per la riprova: si chiudono con il processo
 
 
-def apri(browser, url, larghezza=1440, altezza=900, mobile=False, attesa=2500, riprova_http2=True):
+def apri(browser, url, larghezza=1440, altezza=900, mobile=False, attesa=2500, riprova_http2=True,
+         richieste=None, javascript=True):
     """Apre la pagina in un contesto nuovo. Se il sito rifiuta HTTP/2 del browser automatico
-    (ERR_HTTP2_PROTOCOL_ERROR), riprova con un browser lanciato con --disable-http2."""
+    (ERR_HTTP2_PROTOCOL_ERROR), riprova con un browser lanciato con --disable-http2.
+    richieste: lista in cui raccogliere gli URL richiesti dal caricamento in poi (senza clic).
+    javascript: False per vedere la pagina come la vede chi non esegue JavaScript."""
     def contesto(b):
         c = b.new_context(
             user_agent=UA_MOBILE if mobile else UA,
             viewport={"width": larghezza, "height": altezza},
             is_mobile=mobile, has_touch=mobile, device_scale_factor=1, locale="it-IT",
+            java_script_enabled=javascript,
         )
         p = c.new_page()
+        if richieste is not None:
+            p.on("request", lambda r: richieste.append({"url": r.url, "tipo": r.resource_type}))
         p.on("pageerror", lambda e: errori.append(str(e)[:200]))
         return c, p
 
@@ -73,10 +79,11 @@ def apri(browser, url, larghezza=1440, altezza=900, mobile=False, attesa=2500, r
     except Exception:
         pass
     pg.wait_for_timeout(attesa)
-    try:
-        pg.add_style_tag(content=NASCONDI_BANNER)
-    except Exception:
-        pass
+    if javascript:  # add_style_tag usa JavaScript: con JavaScript spento si bloccherebbe
+        try:
+            pg.add_style_tag(content=NASCONDI_BANNER)
+        except Exception:
+            pass
     return ctx, pg, errori
 
 
