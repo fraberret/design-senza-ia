@@ -1,130 +1,142 @@
 ---
 name: design-senza-ia
 description: >-
-  Processo completo e autonomo per rifare o creare un sito, una landing page, una home o una grafica che NON sembri fatta con
-  l'intelligenza artificiale ("AI slop"): analizza da sola il sito esistente (schermate, colori misurati, font, contenuti,
-  contatti, video), capisce attività e pubblico, trova e cattura i concorrenti principali con il loro punteggio,
-  fa l'inventario del materiale vero, sceglie una direzione motivata dal cliente, costruisce e poi verifica la pagina con uno
-  script che conta i segnali da IA (etichette sopra i titoli, schede identiche, icone in cerchi colorati, comparse allo
-  scorrimento, gradienti, font predefiniti, testi generici) con punteggio e correzioni. Usala ogni volta che l'utente dà
-  l'URL di un sito da rifare, chiede un'anteprima, una home, una landing page, un restyling o una grafica per un cliente,
-  dice che un design "sembra fatto con l'IA", "è generico", "è un template", "è AI slop", o chiede di analizzare
-  concorrenti o il design di un sito, anche se non nomina questa skill.
+  Progetta siti belli e specifici per il cliente, che non sembrano fatti con l'IA e sono corretti per SEO, accessibilità,
+  velocità e leggi italiane: home, landing page, siti vetrina e istituzionali, siti di servizio, e-commerce, siti
+  esperienziali per agenzie, restyling, anteprime HTML, grafiche e loghi su richiesta. Dal brief (tipo di sito, obiettivo,
+  livello di esperienza sobrio, immersivo o esperienziale) all'analisi del sito e dei concorrenti, ai riferimenti, a tre
+  direzioni, alla costruzione e a tre controlli con script (segnali da IA, qualità estetica, tecnico e legale). Non è legato
+  alla piattaforma: dice cosa si rifà in Elementor e cosa solo in codice. Usala ogni volta che l'utente dà
+  l'URL di un sito da rifare, chiede un sito, una home, una landing, un e-commerce, un'anteprima, un restyling, un logo o
+  una grafica per un cliente, dice che un design "sembra fatto con l'IA", "è generico", "è un template", "è brutto", o
+  chiede di analizzare concorrenti o riferimenti, anche se non nomina questa skill.
 ---
 
-# Design senza aspetto da IA
+# Design dei siti senza aspetto da IA
 
-Il look "fatto con l'IA" non è un font o un colore: è la somma di tante scelte predefinite, non decise, tutte insieme
-(etichetta sopra il titolo, tre schede con l'icona nel cerchio, fondo crema, parola arancione nel titolo, comparsa dal basso,
-stesso arrotondamento ovunque...). Il modello, senza vincoli, produce la media dei siti che ha visto. La cura non è un elenco
-di divieti, perché vietare un segnale sposta il modello sul successivo: è **partire dal materiale vero del cliente**,
-**decidere ogni scelta con un motivo**, e **misurare** il risultato.
+Un sito eccellente non si riconosce dallo stile alla moda: dice subito chi sei, cosa fai, per chi e perché tu; ordina le
+sezioni in base a quanto il visitatore sa già; mostra prove vere; ha un sistema visivo piccolo e motivato dal cliente; ha
+**un momento visivo forte** che si ricorda; rispetta soglie tecniche misurate. Il look "fatto con l'IA" è la somma di scelte
+predefinite non decise: la cura non è una lista di divieti (vietato un segnale, il modello passa al successivo) ma **partire
+dal materiale vero del cliente, decidere ogni scelta con un motivo e misurare**. Togliere i difetti non basta: una pagina che
+passa tutti i controlli ma è anonima ha fallito.
 
-Questa skill lavora in modo autonomo dall'URL al risultato verificato. Chiedi all'utente solo ciò che solo lui sa
-(vedi "Quando chiedere").
-
-**Prima di cominciare**, se nella cartella della skill c'è `locale.md`, leggilo: contiene le convenzioni dell'utente
-(cartelle di lavoro, dove sta la guida di stile, strumenti). Vale più delle indicazioni generiche di questo file.
+Lavora in modo autonomo dall'URL al risultato verificato; chiedi solo ciò che solo l'utente o il cliente sanno.
 
 ## Strumenti
-
-Gli script stanno in `scripts/` e si lanciano sempre con il lanciatore, che trova da solo un Python con Playwright:
 
 ```bash
 S=~/.claude/skills/design-senza-ia/scripts
 $S/py.sh analizza_sito.py <url> --out <cartella>/analisi [--pagine 6]
-$S/py.sh cattura_concorrenti.py <url1> <url2> ... --out <cartella>/analisi [--etichetta concorrenti]
+$S/py.sh cattura_concorrenti.py <url1> <url2> ... --out <cartella>/analisi [--etichetta concorrenti|riferimenti]
+$S/py.sh cattura_scorrimento.py <url> --out <cartella>/riferimenti/<sito> [--fotogrammi 12] [--webgpu]
 $S/py.sh controllo_slop.py <url o file.html> --out <cartella>/controllo-vN [--accetta id1,id2] [--soglia 80]
+$S/py.sh controllo_tecnico.py <url o file.html> --out <cartella>/tecnico-vN
 ```
 
-Gli script girano in un browser invisibile, uno alla volta, e impiegano da 1 a 5 minuti: lanciali in primo piano con un
-timeout lungo, o in background se il Mac è lento. Una pagina che usa moduli JavaScript va servita da un server locale
-(`python3 -m http.server`), non aperta come `file://`.
+Browser invisibile, uno script alla volta (1-5 minuti ciascuno): in primo piano con un timeout lungo, o in background. Una
+pagina con moduli JavaScript si serve da un server locale (`python3 -m http.server`). Test degli script:
+`$S/py.sh tests/test_<nome>.py`.
 
-Riferimenti da leggere quando servono:
-- `references/catalogo-segnali.md`: tutti i segnali, perché nascono, cosa fare al loro posto. Leggilo prima di costruire.
-- `references/direzione-e-costruzione.md`: inventario, quanto cambiare, tre direzioni in cinque righe, regole di
-  costruzione e di finitura, controlli finali. Leggilo prima della fase 4.
-- `references/concorrenti-e-strumenti.md`: come trovare i concorrenti, cosa ricavarne, Chrome ed estensione Design.md.
-- `references/immagini-generate.md`: quando serve un'immagine generata, il prompt, come fonderla con la pagina.
+## Le fasi
 
-## Il processo
+**1. Contesto.** Se nella cartella della skill c'è `locale.md`, leggilo per primo: convenzioni dell'utente (cartelle,
+guida di stile, strumenti) che valgono più di questo file. Se c'è `locale/gusto.md` (archivio del gusto: riferimenti
+approvati, tratti comuni, bocciature con la causa), leggilo e guarda le catture. Leggi la guida di stile del cliente se
+esiste.
 
-### Fase 1. Analisi del sito (autonoma)
+**2. Brief.** Scrivi in poche righe i campi di `references/tipi-di-sito-e-sezioni.md` §1: cliente, pubblico, **tipo di
+sito**, obiettivo e CTA principale, traffico e consapevolezza, **livello di esperienza con il motivo**, piattaforma e limiti,
+materiale vero. Quello che manca e solo il cliente sa, chiedilo.
 
-1. Crea la cartella di lavoro (quella indicata in `locale.md`, se c'è; altrimenti chiedi una volta).
-2. `analizza_sito.py <url> --out <cartella>/analisi`. Leggi `analisi.md`, guarda i pezzi `schermate/home-computer-NN.jpg` e
-   `home-telefono-*.jpg`, scorri `testi/`.
-3. Scrivi in `analisi/sintesi.md`: cosa vende, a chi, dove, da quanto, cosa c'è di riconoscibile (icone, slogan, mascotte,
-   video, colori, una firma), cosa non funziona, cosa il titolare evidentemente tiene a mostrare. Il sito vecchio è anche un
-   indizio dei gusti del cliente: un sito pieno e colorato dice che un design vuoto e grigio verrà bocciato.
-4. Lancia `controllo_slop.py` anche sul sito attuale e decidi **quanto cambiare** (rifacimento, ritocco o pochi ritocchi:
-   `references/direzione-e-costruzione.md`, "Quanto cambiare"). Scrivilo nella sintesi.
+**3. Analisi.** `analizza_sito.py` sul sito attuale (leggi `analisi.md`, guarda le schermate); `controllo_slop.py` e
+`controllo_tecnico.py` anche sul sito vecchio (argomenti per la proposta); 4-8 concorrenti con `cattura_concorrenti.py`
+(`references/concorrenti-e-strumenti.md`); inventario del materiale vero e "quanto cambiare"
+(`references/direzione-e-costruzione.md` §1-2). Scrivi la sintesi: media del settore, il migliore e perché, spazio libero.
 
-### Fase 2. Concorrenti (autonoma)
+**4. Riferimenti.** L'archivio del gusto, poi 6-10 riferimenti da gallerie e dai migliori del settore
+(`references/ispirazione.md`), scelti per tipo di sito e livello. Per ognuno: cosa si prende e cosa si lascia, mai la
+pagina intera. Per i siti con movimento, `cattura_scorrimento.py`. Annota i tratti comuni.
 
-1. Trova 4-8 concorrenti e, se utile, 2-4 riferimenti del settore (`references/concorrenti-e-strumenti.md`).
-2. `cattura_concorrenti.py ... --out <cartella>/analisi`. Leggi `concorrenti.md` e guarda il foglio.
-3. Annota nella sintesi: la media del settore (da non copiare), il migliore e perché, lo spazio libero per il cliente,
-   il punteggio IA più alto da battere.
+**5. Direzione.** Tre direzioni diverse, ognuna in cinque righe (attività, carattere, mondo, momenti, firma:
+`references/direzione-e-costruzione.md` §3) più il piccolo sistema (`references/sistema-visivo.md` §1): 4-6 colori con nome
+e ruolo, 1-2 caratteri non predefiniti con il motivo, scala, raggi, movimento per il livello, **una sola mossa audace**, il
+momento visivo forte dell'apertura, i riferimenti usati. Verifica: "con un altro cliente dello stesso settore arriverei allo
+stesso piano?"; se sì, cambia. Mostra le tre direzioni con la tua raccomandazione e aspetta la scelta, salvo piena
+autonomia. Registra la direzione scelta nella guida di stile prima di scrivere codice.
 
-### Fase 3. Inventario del materiale vero
+**6. Struttura e testi.** Ordine delle sezioni dal tipo di sito e dal traffico, prima schermata, navigazione
+(`references/tipi-di-sito-e-sezioni.md`); testi con i fatti del cliente, CTA con verbo e oggetto, prove vere, moduli corti,
+niente segnali di testo della seconda ondata (`references/conversione-e-testi.md`). Scrivi prima la pagina come testo, poi
+scegli la forma di ogni sezione.
 
-Compila la tabella di `references/direzione-e-costruzione.md` sezione 1: logo, colori, font, foto, video, testi, fatti,
-recensioni, elementi del sito vecchio. Copia il materiale utile in `<cartella>/materiale/`. Quello che manca diventa la lista
-"da chiedere al cliente" del resoconto; nel frattempo niente di inventato (numeri, recensioni, persone, date).
+**7. Asset.** Foto vere prima di tutto; immagini generate solo per momenti senza foto, mai realistiche su persone, sede,
+lavori o prodotti del cliente; icone disegnate o ridisegnate su una griglia comune; elementi grafici dalla firma; logo solo
+su richiesta, con il suo processo (`references/immagini-icone-logo.md`).
 
-### Fase 4. Direzione
+**8. Costruzione.** Anteprima HTML in un file nuovo per versione (`<cliente>-home-vN.html`; le precedenti restano), con le
+regole di `references/sistema-visivo.md` e `references/movimento-e-telefono.md` (movimento secondo il livello, telefono
+progettato a parte) e SEO, accessibilità, velocità e privacy dentro dal primo file
+(`references/seo-accessibilita-velocita-legale.md`): font locali WOFF2, video e mappe al clic, `lang`, un H1, meta, JSON-LD,
+`prefers-reduced-motion`.
 
-Prepara tre direzioni ancorate al materiale vero (sezione 3 del riferimento), ognuna in cinque righe: attività, carattere
-(senza "pulito, moderno, elegante, premium"), mondo, momenti, una sola firma. Scegli la più adatta al pubblico e al
-cliente e scrivi il motivo. Se l'utente ha chiesto piena autonomia, scegli e dichiaralo; altrimenti mostra le tre
-direzioni in un messaggio breve con la tua raccomandazione e aspetta. Registra la direzione nella guida di stile del cliente
-(dove dice `locale.md`, altrimenti un file `guida-di-stile.md` nella cartella di lavoro) prima di scrivere codice: le
-cinque righe, font, colori, regole, cose bocciate.
+**9. Tre controlli, prima di mostrare qualsiasi cosa.**
+1. **Segnali da IA**: `controllo_slop.py`, punteggio ≥ 80 e più alto dei concorrenti; i segnali scelti di proposito vanno in
+   `--accetta` con il motivo nella guida di stile (`references/segnali-ia.md`; il gusto del committente e le scelte motivate
+   vincono sul conteggio). Rileggi i testi contro la seconda ondata.
+2. **Qualità estetica**: guarda le schermate su computer e telefono e giudica gli **otto punti**:
+   - *punto di vista*: si riconosce una direzione; prova dello scambio di nome (con il nome di un concorrente reggerebbe?);
+   - *tipografia*: caratteri con carattere, salti di scala netti, misura 45-75 caratteri, niente di predefinito;
+   - *colori trattenuti*: pochi colori usati in grande; niente arcobaleno, niente pagina grigia con un accento minuscolo;
+   - *gerarchia*: test della sfocatura, al massimo 3 livelli e 2 elementi grandi per schermata, non tutto con lo stesso peso;
+   - *immagini*: vere, grandi, con un momento visivo forte in apertura;
+   - *movimento*: quello del livello scelto, un momento curato, nulla che distrae;
+   - *telefono*: composizione propria, CTA nel pollice, niente di rimpicciolito;
+   - *cose invisibili*: stati (hover, focus, errore, invio), microcopy, alt, 404, prestazioni.
+   Poi confronta con l'archivio del gusto e con i riferimenti scelti: se a colpo d'occhio la pagina è più debole, torna
+   alla fase 5. Un punteggio pieno non dice che la pagina è bella.
+3. **Tecnico e legale**: `controllo_tecnico.py` con 0 errori; gli avvisi letti uno per uno; i controlli "a mano" di
+   `references/checklist-consegna.md` (tastiera, focus coperto, banner cookie, P.IVA, contrasti "a occhio" sopra le foto).
 
-### Fase 5. Costruzione
+**10. Resoconto e consegna.** In italiano semplice: dove si apre e come; brief, direzione e motivo in due righe; punteggi
+(slop contro sito vecchio e concorrenti, tecnico); cosa hai controllato e corretto; cosa manca dal cliente e ogni segnaposto
+usato; **cosa si rifà in Elementor** (vedi sotto). Dopo il giudizio dell'utente, registralo nella guida di stile e, se esiste,
+in `locale/gusto.md`.
 
-Segui le regole della sezione 4 del riferimento. In breve: contenuto prima della forma, una composizione diversa per sezione,
-colori pieni del marchio, colore ricco solo nei momenti e il resto tranquillo, tipografia con carattere, icone disegnate
-per il cliente e nel colore del testo, foto vere, movimento quasi zero, testi del cliente, finitura precisa (scala di spazi,
-raggi annidati, niente ombre colorate). Le immagini generate solo per un momento senza foto, con
-`references/immagini-generate.md`. Font caricati dal sito (non da Google) quando la privacy conta. Ogni versione è un
-file nuovo (`<cliente>-home-vN.html`), le precedenti restano.
+## I livelli di esperienza
 
-### Fase 6. Controllo e correzione (autonoma, in ciclo)
+| Livello | Per chi | Movimento | Piattaforma |
+|---|---|---|---|
+| Sobrio e curato | studi, professionisti, attività locali | apertura forte ferma; hover e pressione; al massimo un momento leggero; titolo mai animato | Elementor o codice |
+| Immersivo | marchi con una storia, prodotti, e-commerce curati | in più un momento di scorrimento in una sezione sua | codice o Elementor con poco codice |
+| Esperienziale | agenzie, studi creativi, campagne | storie allo scorrimento, oggetti e testi in movimento, transizioni | codice |
 
-1. `controllo_slop.py <pagina> --out <cartella>/controllo-vN`. Leggi `controllo.md`.
-2. Correggi ogni segnale non scelto. Quelli scelti di proposito vanno in `--accetta` e il motivo nella guida di stile.
-3. Ripeti finché il punteggio è almeno 80 (o la soglia concordata) e più alto di tutti i concorrenti.
-4. Guarda sempre le schermate del controllo: il punteggio misura le forme, non il gusto. Se a colpo d'occhio sembra un
-   modello, torna alla fase 4. Il punteggio è tarato su siti di attività e servizi: i siti di prodotti tech (Linear,
-   Stripe) usano di proposito molti di questi schemi e prendono punteggi bassi senza essere fatti con l'IA.
-5. **Prova dello scambio di nome**: con il nome di un concorrente al posto del cliente, la pagina reggerebbe? Se sì,
-   rinforza testi, momento e firma.
-6. Leggi la riga "Finitura" (spaziature senza scala, lettere strette sui testi piccoli): non toglie punti, ma va sistemata.
-7. Controlli tecnici: niente sbordamenti, un solo H1, testi ≥ 15 px, contrasti calcolati (≥ 4,5:1 testi, ≥ 3:1 grandi),
-   prova a 1440, 900, 390 e 360 px, con JavaScript spento e con il movimento ridotto.
+Il livello dipende dal cliente, mai da chi progetta; sempre con `prefers-reduced-motion` (`references/movimento-e-telefono.md`).
 
-### Fase 7. Resoconto
+## Rifare l'anteprima in Elementor
 
-Scrivi all'utente, in italiano semplice:
-- dove si apre la pagina e come (doppio clic o server);
-- la direzione scelta e perché, in due righe;
-- punteggio IA della nuova pagina contro sito vecchio e concorrenti (una piccola tabella);
-- cosa hai controllato e corretto;
-- cosa manca dal cliente (foto, logo originale, testi, conferme) e ogni elemento sostitutivo usato.
+Nel resoconto, per ogni parte della pagina, una di tre etichette **[Prassi; nomi delle funzioni 2026 non verificati]**:
+- **Nativo**: contenitori Flexbox, colori e caratteri globali, caratteri caricati in locale (Custom Fonts), header fisso,
+  hover, moduli semplici, immagine dell'hero come widget (non come sfondo), video al clic.
+- **Poco codice**: CSS personalizzato per elemento, un momento leggero (frase che si accende, foto che si sviluppa) in un
+  widget HTML, `prefers-reduced-motion`, JSON-LD, anteprime statiche di mappe e video.
+- **Solo codice**: momenti legati alla barra di scorrimento con GSAP, sezioni fissate a capitoli, transizioni di pagina,
+  3D e WebGL, tutto il livello esperienziale.
+Evita le animazioni d'ingresso di Elementor su ogni sezione: sono il segnale `comparsa-scorrimento`.
 
 ## Quando chiedere
 
-Chiedi solo quello che solo l'utente sa: la cartella di lavoro se non è ovvia, una direzione quando non ha dato piena
-autonomia, un riferimento visivo dopo **due bocciature** della stessa versione (non tentare una terza volta alla cieca),
-e i dati del cliente che non si trovano online, e il permesso prima di generare immagini a pagamento. Tutto il resto
-(analisi, ricerche, concorrenti, controlli) lo fai da solo.
+Solo ciò che solo l'utente o il cliente sanno: la cartella di lavoro se non è ovvia; i campi del brief che non si trovano;
+la scelta tra le tre direzioni (salvo piena autonomia); il livello di esperienza se non è chiaro dal cliente; il permesso
+prima di generare immagini a pagamento; **un riferimento visivo dopo due bocciature** della stessa parte (non una terza
+prova alla cieca); il logo, solo se lo chiede l'utente. Tutto il resto (analisi, ricerche, riferimenti, controlli) da sola.
 
 ## Regole fisse
 
-- Niente dati inventati (numeri, recensioni, persone, date, loghi di clienti); per i siti reali i contatti veri del cliente
-  si usano così come sono.
-- Una persona in foto non si presenta come il cliente senza conferma.
-- Contrasti calcolati e controllo a larghezza di telefono prima di mostrare qualsiasi pagina o grafica.
+- Niente dati inventati: numeri, recensioni, persone, date, loghi di clienti. I contatti veri del cliente si usano così come
+  sono. Una persona in foto non si presenta come il cliente senza conferma.
+- Nessuna immagine IA realistica di persone, sede, lavori o prodotti del cliente (AI Act art. 50).
+- Nessuna richiesta a terzi (font, YouTube, mappe, analisi) prima del consenso; P.IVA in home; niente dark pattern.
+- Contrasti calcolati (testo 4,5:1, grande 3:1, bordi e focus 3:1) e controllo a larghezza di telefono prima di mostrare.
+- Animazioni d'interfaccia mai oltre 500 ms; `prefers-reduced-motion` sempre; contenuto leggibile senza JavaScript.
+- Ogni versione in un file nuovo; il giudizio dell'utente si registra nella guida di stile.
