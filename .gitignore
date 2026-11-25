@@ -1,0 +1,6 @@
+# convenzioni personali di chi usa la skill: restano sul proprio computer
+locale.md
+.venv/
+__pycache__/
+*.pyc
+.DS_Store
