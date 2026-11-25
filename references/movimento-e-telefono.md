@@ -20,7 +20,7 @@ azioni frequenti non si animano, "l'animazione deve guadagnarsi il posto" **[Opi
 | Hover, pressione, interruttori | 100-150 ms (dentro 150, fuori 120, pressione 90) | ease-out |
 | Menu a tendina, tooltip, notifiche | 150-250 ms (apre 200, chiude 120) | ease-out |
 | Modale o pannello | 250-300 ms in entrata, circa 200 ms in uscita | ease-out in entrata, accelerazione in uscita |
-| Zoom di una foto al passaggio | 600 ms dentro, 400 ms fuori | ease-out |
+| Zoom di una foto al passaggio | 400 ms dentro, 300 ms fuori (TasteSkill usa 600/400: ridotto per stare sotto i 500 ms) | ease-out |
 | Transizione di pagina | 250-400 ms, uscita più veloce dell'entrata | standard |
 | Limite per l'interfaccia | mai oltre 500 ms | — |
 | Movimento ridotto | spostamenti a zero, resta solo una dissolvenza breve o il cambio di colore | — |

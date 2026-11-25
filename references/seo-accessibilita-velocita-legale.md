@@ -13,7 +13,7 @@ generici in serie (scaled content abuse), metadati generati e mai riletti **[Evi
 | Area | Regola | Livello | Verifica |
 |---|---|---|---|
 | Indicizzazione | Googlebot non bloccato, risposta 200, contenuto nell'HTML iniziale; ambiente di prova con `noindex` o password, tolto al lancio | [Evidenza] ([Google](https://developers.google.com/search/docs/fundamentals/ai-optimization-guide)) | `senza-js` (contenuto senza JavaScript); il resto a mano |
-| Mobile | Google indicizza con lo smartphone: contenuti, dati strutturati, title e link anche nella versione mobile | [Evidenza] ([Google](https://developers.google.com/search/docs/crawling-indexing/mobile/mobile-sites-mobile-first-indexing)) | a mano |
+| Mobile | Google indicizza con lo smartphone: contenuti, dati strutturati, title e link anche nella versione mobile | [Evidenza] ([Google](https://developers.google.com/search/docs/crawling-indexing/mobile/mobile-sites-mobile-first-indexing)) | `viewport` (meta presente); il resto a mano |
 | robots.txt | blocca la scansione, non l'indicizzazione: per escludere serve `noindex` su una pagina non bloccata | [Evidenza] ([Google](https://developers.google.com/search/docs/crawling-indexing/robots/intro)) | a mano |
 | Canonical | autoreferenziale su ogni pagina; redirect, sitemap e link interni puntano allo stesso URL | [Evidenza] ([Google](https://developers.google.com/search/docs/crawling-indexing/consolidate-duplicate-urls)) | `canonical` |
 | Sitemap | solo URL canonici, 200, indicizzabili; in robots.txt e in Search Console | [Prassi] | a mano |
@@ -72,7 +72,7 @@ sitemap inviata, conversioni attive. Dopo 2-8 settimane: rapporti Pagine e Prest
 | 2.4.7 focus visibile | sempre, mai tolto | a mano |
 | 2.1.1 tastiera | tutto usabile da tastiera, senza trappole (menu mobile!) | a mano |
 | 2.2.2 pausa | ciò che si muove da solo oltre 5 s ha una pausa | a mano |
-| 2.3.3 movimento | `prefers-reduced-motion` rispettato | `movimento-ridotto` |
+| 2.3.3 movimento (AAA, adottato come regola fissa) | `prefers-reduced-motion` rispettato | `movimento-ridotto` |
 | 2.5.7 trascinamento | ogni trascinamento ha un'alternativa a clic | a mano |
 | 3.2.6 aiuto coerente | aiuto e contatti nello stesso ordine su tutte le pagine | a mano |
 | 3.3.7 dati ridondanti | non far reinserire dati già dati | a mano |

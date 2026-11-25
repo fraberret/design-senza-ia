@@ -10,6 +10,7 @@ siti come bizar.ro); senza, se la pagina dice di richiedere WebGPU, lo scrive in
 """
 import argparse
 import os
+import re
 import sys
 
 from PIL import Image
@@ -41,7 +42,11 @@ def main():
     o = a.parse_args()
     os.makedirs(o.out, exist_ok=True)
     url = comune.url_da_argomento(o.pagina)
+    errore_txt = os.path.join(o.out, "errore.txt")
+    if os.path.exists(errore_txt):  # resto di un giro precedente
+        os.remove(errore_txt)
     avvisi = []
+    fotogrammi = []
 
     with sync_playwright() as p:
         if o.webgpu:
@@ -51,34 +56,42 @@ def main():
         try:
             ctx, pg, _ = comune.apri(b, url, attesa=3000)
         except Exception as e:  # rete, DNS, HTTP/2 anche dopo la riprova
-            open(os.path.join(o.out, "errore.txt"), "w").write(
-                f"{url}\nerrore: {str(e).splitlines()[0]}\n"
+            msg = comune.prima_riga(e)
+            open(errore_txt, "w").write(
+                f"{url}\nerrore: {msg}\n"
                 + ("" if o.webgpu else "Il sito può rifiutare il browser automatico: in quel caso si cattura a mano dal browser.\n"))
-            print(f"errore: {str(e).splitlines()[0]}")
+            print(f"errore: {msg}")
             b.close()
+            comune.chiudi_riprove()
             return 0
         corpo = pg.evaluate("(document.body && document.body.innerText) || ''")
-        if not o.webgpu and "webgpu" in corpo.lower():
+        # avviso solo se la pagina dice di aver bisogno di WebGPU, non se lo nomina e basta
+        if not o.webgpu and len(corpo) < 600 and re.search(
+                r"(needs?|requires?|require|richiede|serve)\s+WebGPU|WebGPU\s+(is\s+)?(not\s+(supported|available)|non\s+(è\s+)?support)",
+                corpo, re.I):
             avvisi.append("La pagina sembra richiedere WebGPU: rilanciare con --webgpu (browser visibile).")
-        fotogrammi = []
-        for i in range(o.fotogrammi):
-            f = os.path.join(o.out, f"f{i:02d}.png")
-            pg.screenshot(path=f)
-            fotogrammi.append(f)
-            for _ in range(6):
-                pg.mouse.wheel(0, 150)
-                pg.wait_for_timeout(120)
-            pg.wait_for_timeout(900)
+        try:
+            for i in range(o.fotogrammi):
+                f = os.path.join(o.out, f"f{i:02d}.png")
+                pg.screenshot(path=f)
+                fotogrammi.append(f)
+                for _ in range(6):
+                    pg.mouse.wheel(0, 150)
+                    pg.wait_for_timeout(120)
+                pg.wait_for_timeout(900)
+        except Exception as e:  # pagina che si chiude o si blocca a metà: si tiene quello che c'è
+            avvisi.append(f"cattura interrotta al fotogramma {len(fotogrammi)}: {comune.prima_riga(e)}")
         ctx.close()
         b.close()
+    comune.chiudi_riprove()
 
-    foglio_4(fotogrammi, os.path.join(o.out, "foglio.jpg"))
+    if fotogrammi:
+        foglio_4(fotogrammi, os.path.join(o.out, "foglio.jpg"))
     if avvisi:
-        open(os.path.join(o.out, "errore.txt"), "w").write(f"{url}\n" + "\n".join(avvisi) + "\n")
+        open(errore_txt, "w").write(f"{url}\n" + "\n".join(avvisi) + "\n")
         print("\n".join(avvisi))
     print(o.out)
     return 0
-
 
 if __name__ == "__main__":
     sys.exit(main())

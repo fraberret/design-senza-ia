@@ -81,7 +81,8 @@ progettato a parte) e SEO, accessibilità, velocità e privacy dentro dal primo 
 `prefers-reduced-motion`.
 
 **9. Tre controlli, prima di mostrare qualsiasi cosa.**
-1. **Segnali da IA**: `controllo_slop.py`, punteggio ≥ 80 e più alto dei concorrenti; i segnali scelti di proposito vanno in
+1. **Segnali da IA**: `controllo_slop.py`, punteggio ≥ 80 e più alto dei concorrenti, e nessun "aspetto da IA" nella riga
+   delle co-occorrenze per gruppo; i segnali scelti di proposito vanno in
    `--accetta` con il motivo nella guida di stile (`references/segnali-ia.md`; il gusto del committente e le scelte motivate
    vincono sul conteggio). Rileggi i testi contro la seconda ondata.
 2. **Qualità estetica**: guarda le schermate su computer e telefono e giudica gli **otto punti**:

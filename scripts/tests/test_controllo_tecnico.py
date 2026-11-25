@@ -156,9 +156,41 @@ def test_transizioni_di_colore():
     assert esiti(d)["movimento-ridotto"]["esito"] == "ok", esiti(d)["movimento-ridotto"]
 
 
+def test_occhio_insieme_agli_errori():
+    """Con testi sotto soglia, l'elenco dei testi 'a occhio' resta nel dettaglio."""
+    d = pagina('<p style="color:#bbb">Testo grigio chiaro.</p><div style="background:linear-gradient(#123,#c96);padding:30px">'
+               '<h1 style="color:#fff">Titolo sul gradiente</h1></div>')
+    c = esiti(d)["contrasto"]
+    assert c["esito"] == "errore" and "Titolo sul gradiente" in c["dettaglio"], c
+
+
+def test_viewport_mancante():
+    """Senza <meta name=viewport> il telefono vede un layout da 980 px: errore."""
+    out = cartella()
+    p = os.path.join(out, "pagina.html")
+    open(p, "w").write('<!doctype html><html lang="it"><head><meta charset="utf-8"><title>Prova</title></head>'
+                       '<body><h1>Titolo</h1><p>Testo.</p></body></html>')
+    assert esiti(controlla(p))["viewport"]["esito"] == "errore"
+    assert esiti(pagina('<h1>Titolo</h1>'))["viewport"]["esito"] == "ok"
+
+
+def test_domini_e_font():
+    """Domini confrontati con il punto (notyoutube.com non è YouTube); font senza estensione non segnalati."""
+    import sys
+    from comune_test import SCRIPTS
+    sys.path.insert(0, SCRIPTS)
+    import controllo_tecnico as CT
+    assert CT.e_vietato("www.youtube.com") and CT.e_vietato("fonts.gstatic.com")
+    assert not CT.e_vietato("notyoutube.com")
+    r = [{"url": "https://use.typekit.net/af/abc/000", "tipo": "font"},
+         {"url": "https://esempio.it/f/roboto.woff", "tipo": "font"},
+         {"url": "https://esempio.it/f/inter.woff2?v=1", "tipo": "font"}]
+    assert CT.font_non_woff2(r) == ["roboto.woff"], CT.font_non_woff2(r)
+
+
 if __name__ == "__main__":
     esegui([test_pagina_buona, test_pagina_cattiva, test_testo_su_immagine, test_file_locale,
             test_testo_nascosto, test_bersaglio_isolato, test_bersagli_vicini,
             test_oklch, test_foto_in_elemento_fratello, test_errore_rete, test_h1_nascosto,
             test_classe_cookie_sul_body, test_banner_cookie, test_contrasto_senza_testi, test_animazione_css_esterno,
-            test_transizioni_di_colore])
+            test_transizioni_di_colore, test_occhio_insieme_agli_errori, test_viewport_mancante, test_domini_e_font])

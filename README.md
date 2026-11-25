@@ -57,10 +57,10 @@ $S/py.sh controllo_slop.py lavoro/home-v1.html --out lavoro/controllo-v1 --sogli
 $S/py.sh controllo_tecnico.py lavoro/home-v1.html --out lavoro/tecnico-v1
 ```
 
-- `controllo_slop.py` scrive `controllo.md` con il punteggio da 0 a 100, i segnali trovati (dove sono e cosa fare), una
-  riga tecnica e una di finitura, più le schermate. Un segnale scelto di proposito si dichiara con `--accetta id1,id2`.
+- `controllo_slop.py` scrive `controllo.md` con il punteggio da 0 a 100, i segnali trovati (dove sono e cosa fare), il
+  conteggio per gruppo delle co-occorrenze, una riga tecnica e una di finitura, più le schermate. Un segnale scelto di proposito si dichiara con `--accetta id1,id2`.
 - `controllo_tecnico.py` scrive `tecnico.md` e `tecnico.json`: contrasti (WCAG 2.2, "a occhio" sopra foto e gradienti),
-  bersagli tattili, sbordamenti a 360/390/1440 px, testi piccoli, H1, lingua, title, description, canonical, Open Graph,
+  bersagli tattili, sbordamenti a 360/390/1440 px, testi piccoli, meta viewport, H1, lingua, title, description, canonical, Open Graph,
   JSON-LD, alt, dimensioni delle immagini, immagine principale in lazy-load, richieste a terzi prima del consenso, formato
   dei font, movimento ridotto, testo senza JavaScript, P.IVA, link `tel:`.
 - `cattura_scorrimento.py` salva i fotogrammi dello scorrimento e un foglio di confronto; `--webgpu` apre un browser

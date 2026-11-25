@@ -158,6 +158,10 @@ scambio di nome**: se con il nome di un concorrente la pagina regge lo stesso, m
 | Movimento | comparsa dal basso su ogni sezione; hover su ogni scheda; contatori | `comparsa-scorrimento`, `solleva-hover`, `statistiche-contatore` |
 | Contenuto | testi generici; testimonianze senza nome; numeri e loghi inventati; link morti | `frasi-generiche`; il resto a mano |
 
+`controllo_slop.py` conta i segnali trovati per gruppo e scrive in `controllo.md` se insieme fanno un aspetto da IA
+(tre o più nello stesso gruppo, o quattro gruppi toccati); il conteggio è informativo e non cambia il punteggio. I segnali
+di contenuto non visibili allo script (testimonianze inventate, link morti) si aggiungono a mano.
+
 Fonte della tabella: ricerca "Sito web eccellente dalla A alla Z", sezione sui segnali, che riprende
 [anthropics/skills, frontend-design](https://raw.githubusercontent.com/anthropics/skills/main/skills/frontend-design/SKILL.md)
 **[Opinione convergente]**. Lettura: uno o due segnali da gruppi diversi sono normali; tre o più dello stesso gruppo, o

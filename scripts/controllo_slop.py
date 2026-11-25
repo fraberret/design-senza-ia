@@ -95,6 +95,18 @@ SEGNALI = {
 # scattano anche su siti fatti da studi (Linear, Stripe) e su siti vecchi fatti a mano. Sono difetti di finitura,
 # non segni da IA: compaiono come informazione nella riga "Finitura" di controllo.md.
 
+# gruppi della tabella delle co-occorrenze (references/segnali-ia.md §11): tre segnali nello stesso gruppo,
+# o quattro gruppi toccati, fanno un aspetto da IA. Informativo: non cambia il punteggio.
+GRUPPI = {
+    "Tipografia": {"font-default", "parola-colorata-h1", "etichette-mono", "etichette-sopra-titoli", "maiuscolo-spaziato", "titoli-pesanti"},
+    "Colore": {"gradiente-fondo", "testo-gradiente", "aloni-decorativi", "vetro", "crema-terracotta", "ombre-colorate"},
+    "Layout": {"pillola-hero", "griglia-schede-uguali", "icona-in-cerchio", "raggio-uniforme", "bordo-e-ombra", "numeri-decorativi",
+               "spazi-uniformi", "struttura-ripetuta", "tutto-centrato", "elenco-spunte", "piede-quattro-colonne"},
+    "Dettagli": {"freccia-su-link", "trattini-lunghi", "puntini-mediani", "esclamativi", "punto-su-etichette"},
+    "Movimento": {"comparsa-scorrimento", "solleva-hover", "statistiche-contatore"},
+    "Contenuto": {"frasi-generiche", "chat-finta", "zero-foto"},
+}
+
 BANALI = ["scopri di più", "scopri", "inizia ora", "inizia subito", "get started", "learn more", "start now",
           "soluzioni innovative", "a 360 gradi", "all'avanguardia", "su misura per te", "il partner ideale",
           "potenzia", "sblocca", "trasforma il tuo", "porta il tuo business", "eccellenza", "seamless",
@@ -259,8 +271,11 @@ JS = r"""
     .filter(e => { const t = testo(e); return t.length > 2 && t.length < 70 && /[^.]\.$/.test(t); });
   if (conPunto.length >= 3) conPunto.slice(0, 5).forEach(e => add('punto-su-etichette', e));
   // seconda ondata: crema + terracotta, frecce sui link, puntini mediani, etichette in monospace
-  const rgb = c => { const m = (c || '').match(/rgba?\((\d+),\s*(\d+),\s*(\d+)(?:,\s*([\d.]+))?\)/);
-    return m && (m[4] === undefined || +m[4] > 0.5) ? [+m[1], +m[2], +m[3]] : null; };
+  // colori dai pixel di un canvas: legge anche oklch(), color(), color-mix()
+  const tela = document.createElement('canvas'); tela.width = tela.height = 1;
+  const g2 = tela.getContext('2d', { willReadFrequently: true });
+  const rgb = c => { if (!c || c === 'transparent') return null; g2.clearRect(0, 0, 1, 1); g2.fillStyle = c; g2.fillRect(0, 0, 1, 1);
+    const d = g2.getImageData(0, 0, 1, 1).data; return d[3] > 128 ? [d[0], d[1], d[2]] : null; };
   const hsl = ([r, g, b]) => { r /= 255; g /= 255; b /= 255; const M = Math.max(r, g, b), m = Math.min(r, g, b), l = (M + m) / 2;
     if (M === m) return [0, 0, l]; const d = M - m; const s = l > 0.5 ? d / (2 - M - m) : d / (M + m);
     let h = M === r ? (g - b) / d + (g < b ? 6 : 0) : M === g ? (b - r) / d + 2 : (r - g) / d + 4; return [h * 60, s, l]; };
@@ -355,9 +370,15 @@ def main():
     punteggio = max(0, punteggio)
     trovati.sort(key=lambda x: -x["punti"])
 
+    non_accettati = {t["id"] for t in trovati if not t["accettato"]}
+    gruppi = {g: len(ids & non_accettati) for g, ids in GRUPPI.items()}
+    toccati = [g for g, n in gruppi.items() if n]
+    aspetto_ia = any(n >= 3 for n in gruppi.values()) or len(toccati) >= 4
     esito = "SUPERATO" if punteggio >= a.soglia else "DA RIVEDERE"
     righe = [f"# Controllo segnali IA: {a.pagina}", "",
              f"**Punteggio: {punteggio}/100 · {esito}** (soglia {a.soglia}). 100 = nessun segnale di default rilevato.", "",
+             "Co-occorrenze per gruppo: " + (", ".join(f"{g} {n}" for g, n in gruppi.items() if n) or "nessuna")
+             + (" · **insieme fanno un aspetto da IA** (3+ nello stesso gruppo o 4+ gruppi)" if aspetto_ia else " · nessun aspetto d'insieme"), "",
              f"Sezioni: {r['n_sezioni']} · foto vere ≥ 400 px: {r['foto']} · font: {', '.join(list(r['font'])[:5])}",
              f"Tecnico: sborda di {tecnici['sborda']}px su computer e {sborda_m}px su telefono · H1: {tecnici['h1']} · testi sotto 15 px: {tecnici['piccoli']} · errori JS: {len(errori) + len(err_m)}",
              f"Finitura (non nel punteggio): {r['finitura']['spazi_diversi']} valori di spaziatura diversi"
@@ -379,6 +400,7 @@ def main():
     with open(os.path.join(out, "controllo.md"), "w") as f:
         f.write("\n".join(righe))
     C.scrivi_json(os.path.join(out, "controllo.json"), {"pagina": a.pagina, "punteggio": punteggio, "esito": esito,
+                                                         "gruppi": gruppi, "aspetto_ia": aspetto_ia,
                                                          "segnali": trovati, "tecnico": tecnici, "sborda_telefono": sborda_m,
                                                          "finitura": r["finitura"]})
     print(f"{punteggio}/100 {esito} · {len(trovati)} tipi di segnale · {out}/controllo.md")

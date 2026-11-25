@@ -30,6 +30,7 @@ REGOLE = {
     "bersagli": "a 390 px: link e pulsanti ≥ 24×24 px o distanziati (WCAG 2.5.8), obiettivo 44×44; esclusi i link nel testo",
     "sbordamento": "nessuno scorrimento orizzontale a 360, 390 e 1440 px",
     "testi-piccoli": "a 390 px nessun testo sotto i 16 px (piccole note ammesse, da guardare)",
+    "viewport": "<meta name=viewport> con width=device-width (senza, il telefono vede un layout da 980 px)",
     "h1": "un solo H1",
     "lang": "attributo lang sull'elemento html",
     "title": "title tra 30 e 60 caratteri",
@@ -140,7 +141,8 @@ JS_PAGINA = r"""
   const tel = [...new Set((corpo.match(/(?:\+39[\s.]?)?(?:0\d{1,3}|3\d{2})(?:[\s./-]?\d{2,4}){2,4}/g) || [])
     .map(x => x.trim()).filter(x => { const n = x.replace(/\D/g, ''); return n.length >= 8 && n.length <= 13 && /[\s./-]/.test(x); }))];
   const telLink = document.querySelectorAll('a[href^="tel:"]').length;
-  return { title: document.title || '', description: meta('name', 'description'), lang: document.documentElement.lang || '',
+  const vp = (document.querySelector('meta[name="viewport"]') || {}).content || '';
+  return { viewport: vp, title: document.title || '', description: meta('name', 'description'), lang: document.documentElement.lang || '',
     canonical: !!document.querySelector('link[rel="canonical"]'),
     og: ['og:title', 'og:description', 'og:image'].filter(n => !meta('property', n)),
     h1: [...document.querySelectorAll('h1')].filter(vis).map(h => h.innerText.trim().slice(0, 60)),
@@ -206,6 +208,24 @@ JS_MOVIMENTO = r"""
 """
 
 
+def e_vietato(host):
+    """Il dominio è uno di quelli che richiedono il consenso (confronto con il punto: notyoutube.com no)."""
+    h = (host or "").lower()
+    return any(h == v or h.endswith("." + v) for v in TERZI_VIETATI)
+
+
+def font_non_woff2(richieste):
+    """Nomi dei font scaricati in un formato diverso da WOFF2; senza estensione (es. Typekit) non si giudica."""
+    out = []
+    for r in richieste:
+        u = r["url"].split("?")[0].split("#")[0]
+        if u.startswith("data:"):
+            continue
+        if re.search(r"\.(ttf|otf|woff|eot)$", u, re.I):
+            out.append(u.split("/")[-1])
+    return sorted(set(out))
+
+
 def dominio_base(h):
     h = (h or "").lower()
     return h[4:] if h.startswith("www.") else h
@@ -225,7 +245,8 @@ def valuta(url, js_on, js_off, tel_dati, sbordi, richieste):
     co = js_on["contrasto"]
     if co["falliti"]:
         ex = "; ".join(f'"{f["testo"][:40]}" {f["rapporto"]}:1 (min {f["minimo"]})' for f in co["falliti"][:4])
-        add("contrasto", "errore", f'{len(co["falliti"])} testi sotto soglia: {ex}')
+        occhio = ("; da guardare a occhio: " + "; ".join(f'"{t[:40]}"' for t in co["occhio"][:4])) if co["occhio"] else ""
+        add("contrasto", "errore", f'{len(co["falliti"])} testi sotto soglia: {ex}{occhio}')
     elif co["occhio"]:
         add("contrasto", "a occhio", f'{len(co["occhio"])} testi sopra immagini, video o gradienti: '
             + "; ".join(f'"{t[:40]}"' for t in co["occhio"][:4]))
@@ -254,6 +275,9 @@ def valuta(url, js_on, js_off, tel_dati, sbordi, richieste):
         f"{len(p)} testi sotto 16 px: " + "; ".join(f'"{x["testo"]}" {x["px"]:g} px' for x in p[:5]) if p else "tutti ≥ 16 px")
 
     pg = js_on["pagina"]
+    vp = pg["viewport"]
+    add("viewport", "ok" if "width=device-width" in vp.replace(" ", "") else "errore",
+        f'content="{vp}"' if vp else "manca <meta name=viewport>")
     n = len(pg["h1"])
     add("h1", "ok" if n == 1 else "errore", f'{n} H1: ' + " | ".join(pg["h1"][:3]))
     add("lang", "ok" if pg["lang"] else "errore", f'lang="{pg["lang"]}"' if pg["lang"] else "manca lang su <html>")
@@ -286,7 +310,7 @@ def valuta(url, js_on, js_off, tel_dati, sbordi, richieste):
         if u.scheme not in ("http", "https") or stesso_sito(u.hostname, base):
             continue
         terzi.append(r["url"])
-    vietati = sorted({urlparse(x).hostname for x in terzi if any(dominio_base(urlparse(x).hostname).endswith(v) for v in TERZI_VIETATI)})
+    vietati = sorted({urlparse(x).hostname for x in terzi if e_vietato(urlparse(x).hostname)})
     altri = sorted({urlparse(x).hostname for x in terzi} - set(vietati))
     if vietati:
         add("terzi-al-caricamento", "errore", "prima del consenso: " + ", ".join(vietati) + (f" (altri: {', '.join(altri[:5])})" if altri else ""))
@@ -295,10 +319,8 @@ def valuta(url, js_on, js_off, tel_dati, sbordi, richieste):
     else:
         add("terzi-al-caricamento", "ok", "nessuna richiesta a terzi senza clic")
 
-    font = sorted({r["url"].split("?")[0].split("/")[-1] for r in richieste
-                   if (r["tipo"] == "font" or re.search(r"\.(ttf|otf|woff2?|eot)(\?|$)", r["url"]))
-                   and not re.search(r"\.woff2(\?|$)", r["url"]) and not r["url"].startswith("data:")})
-    add("font-formato", "avviso" if font else "ok", "non WOFF2: " + ", ".join(font[:5]) if font else "solo WOFF2 o nessun font scaricato")
+    font = font_non_woff2(richieste)
+    add("font-formato", "avviso" if font else "ok", "non WOFF2: " + ", ".join(font[:5]) if font else "solo WOFF2, nessun font o formato non riconoscibile dall'indirizzo")
 
     mov, mov_ridotto = js_on["movimento"], js_on["movimento_ridotto"]
     if mov_ridotto:
@@ -342,7 +364,7 @@ def main():
     try:
         dati = misura(url)
     except Exception as e:  # rete, DNS, timeout: il rapporto dice l'errore, l'elenco non si ferma
-        msg = (str(e).strip().splitlines() or [type(e).__name__])[0]
+        msg = C.prima_riga(e)
         C.scrivi_json(os.path.join(o.out, "tecnico.json"), {"pagina": url, "errore": msg, "errori": 0, "avvisi": 0, "controlli": []})
         open(os.path.join(o.out, "tecnico.md"), "w").write(f"# Controllo tecnico\n\nPagina: {url}\n\n**Non controllata:** {msg}\n")
         print(f"errore: {msg}")

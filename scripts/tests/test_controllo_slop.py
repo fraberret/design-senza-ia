@@ -34,5 +34,24 @@ def test_regressione():
     assert b["punteggio"] <= 30, f"pagina slop: {b['punteggio']}"
 
 
+def test_crema_oklch():
+    """Crema e terracotta scritti in oklch() si riconoscono."""
+    t = open(os.path.join(FIX, "seconda-ondata.html")).read()
+    t = t.replace("#F4F1EA", "oklch(0.96 0.012 85)").replace("#D97757", "oklch(0.67 0.13 40)")
+    out = cartella()
+    p = os.path.join(out, "oklch.html")
+    open(p, "w").write(t)
+    ids = {x["id"] for x in controlla(p)["segnali"]}
+    assert "crema-terracotta" in ids, sorted(ids)
+
+
+def test_cooccorrenze():
+    """Il rapporto conta i segnali per gruppo e dice se insieme fanno un aspetto da IA."""
+    d = controlla(os.path.join(FIX, "seconda-ondata.html"))
+    g = d["gruppi"]
+    assert g["Dettagli"] >= 2 and g["Colore"] >= 1 and g["Tipografia"] >= 1, g
+    assert "aspetto_ia" in d
+
+
 if __name__ == "__main__":
-    esegui([test_seconda_ondata, test_regressione])
+    esegui([test_seconda_ondata, test_regressione, test_crema_oklch, test_cooccorrenze])

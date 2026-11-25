@@ -24,6 +24,11 @@ _BANNER = ("[id*=cookie i],[class*=cookie i],[id*=consent i],[class*=consent i],
 NASCONDI_BANNER = ",".join(x + ":not(html):not(body):not(main)" for x in _BANNER.split(",")) + "{display:none!important}"
 
 
+def prima_riga(e):
+    """Prima riga del messaggio di un'eccezione, o il suo tipo se il messaggio è vuoto."""
+    return (str(e).strip().splitlines() or [type(e).__name__])[0]
+
+
 def url_da_argomento(x):
     """Accetta un URL o un file locale; restituisce un URL apribile."""
     if re.match(r"^https?://", x):
