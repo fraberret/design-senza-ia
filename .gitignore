@@ -4,3 +4,6 @@ locale.md
 __pycache__/
 *.pyc
 .DS_Store
+
+# parte privata: convenzioni, archivio del gusto, piani
+locale/
